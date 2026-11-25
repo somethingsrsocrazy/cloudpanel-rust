@@ -75,10 +75,14 @@ pub fn fix_db_ownership(mc: &MailConfig) {
     }
 }
 
-/// Write `contents` owned by the service user with `mode`.
+/// Write `contents` owned by the service user with `mode`. Only root can give a file away, so
+/// without it the file stays with whoever wrote it (the service itself, or a test run).
 pub fn write_owned(path: &Path, contents: &[u8], mode: u32) -> Result<(), String> {
     crate::fsutil::write_atomic(path, contents, mode)
         .map_err(|e| format!("Could not write {}: {e}", path.display()))?;
+    if !crate::fsutil::running_as_root() {
+        return Ok(());
+    }
     if let Some(owner) = service_owner() {
         crate::fsutil::lchown(path, Some(owner)).map_err(|e| format!("Could not chown {}: {e}", path.display()))?;
     }
