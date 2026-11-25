@@ -6,8 +6,8 @@ use crate::config::Config;
 use crate::db::{self, models::Site, models::SiteType};
 use crate::services::nginx::{DEFAULT_MAINTENANCE_MESSAGE, MAINTENANCE_MESSAGE_MAX};
 use crate::services::sites::{deprovision, provision, www_choice, SiteInput};
-use crate::services::{apps, cert_takeover, php, pm2, runtimes, NginxService, SslService};
-use crate::state::SharedState;
+use crate::services::{apps, cert_takeover, php, pm2, runtimes, traffic, NginxService, SslService};
+use crate::state::{blocking, SharedState};
 use crate::validate;
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
@@ -610,6 +610,22 @@ pub async fn get_site_logs(
         })
         .await?;
     Ok(Json(json!({ "logs": logs })))
+}
+
+pub async fn get_site_traffic(
+    Path(id): Path<i64>,
+    user: AuthUser,
+    State(state): State<SharedState>,
+) -> ApiResult<impl IntoResponse> {
+    let log_dir = state.config.nginx_log_dir.clone();
+    let site = state.db(move |conn| require_site(conn, &user, id)).await?;
+    let domain = validate::domain(&site.domain).map_err(ApiError::BadRequest)?;
+    let figures = blocking(move || {
+        traffic::summarize(&log_dir, &domain)
+            .map_err(|e| ApiError::Unprocessable(format!("Could not read the access log: {e}")))
+    })
+    .await?;
+    Ok(Json(figures))
 }
 
 pub async fn get_site_vhost(

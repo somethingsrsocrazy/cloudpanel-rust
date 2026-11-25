@@ -26,6 +26,7 @@ pub mod ssl;
 pub mod system;
 pub mod system_metrics;
 pub mod sysusers;
+pub mod traffic;
 pub mod wireguard;
 
 pub use nginx::NginxService;

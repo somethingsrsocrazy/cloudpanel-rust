@@ -375,6 +375,24 @@ function maintenanceCard(site, reload) {
 
 // ---------- Overview ----------
 
+function trafficCard(site) {
+  const result = h('div', null, h('p', { class: 'muted', text: 'Requests per day, from the current and previous access log.' }));
+  const button = h('button', { class: 'btn' }, icon('refresh'), 'Show traffic');
+  button.addEventListener('click', () => withBusy(button, async () => {
+    try {
+      const t = await api(`/sites/${site.id}/traffic`);
+      const num = (n) => h('td', { class: 'num', text: n.toLocaleString() });
+      result.replaceChildren(t.days.length
+        ? table(['Date', { label: 'Requests', class: 'num' }, { label: 'Visitors', class: 'num' }, { label: 'Sent', class: 'num' }, { label: '4xx', class: 'num hide-sm' }, { label: '5xx', class: 'num hide-sm' }],
+          t.days.map((d) => h('tr', null, h('td', { text: d.date }), num(d.requests), num(d.visitors), h('td', { class: 'num', text: fmtBytes(d.bytes) }),
+            h('td', { class: 'num hide-sm', text: d.client_errors.toLocaleString() }), h('td', { class: 'num hide-sm', text: d.server_errors.toLocaleString() }))))
+        : h('p', { class: 'muted', text: 'No requests logged yet.' }),
+      ...(t.truncated ? [h('p', { class: 'small faint', text: 'The log is very large, so only its latest part was counted.' })] : []));
+    } catch (e) { if (e.status !== 401) toast(e.message, 'error'); }
+  }));
+  return card({ title: 'Traffic', body: h('div', { class: 'form' }, result, h('div', null, button)) });
+}
+
 function tabOverview(el, { site }) {
   const t = SITE_TYPES[site.site_type] || { label: site.site_type };
   const cert = site.certificate;
@@ -398,6 +416,7 @@ function tabOverview(el, { site }) {
           site.app.since && ['Since', site.app.since], ['Command', h('code', { class: 'truncate', text: site.app_command || '—' })],
         ]),
       }),
+      trafficCard(site),
       card({
         title: 'Certificate', body: cert ? kv([
           ['Issuer', cert.issuer], ['Names', cert.names.join(', ') || cert.subject],
