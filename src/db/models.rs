@@ -111,6 +111,10 @@ pub struct Site {
     /// False when the site's nginx config was imported from CloudPanel CE. The panel keeps that
     /// file exactly as it is and refuses changes that would regenerate it.
     pub vhost_managed: bool,
+    /// Most memory the app's unit may use, in MB. None for no limit.
+    pub memory_limit_mb: Option<u32>,
+    /// Most CPU time the app's unit may use, as a percentage of one core. None for no limit.
+    pub cpu_limit_percent: Option<u32>,
     /// Visitors see a maintenance page (HTTP 503) while the site keeps running behind it.
     pub maintenance_mode: bool,
     /// What the maintenance page says; empty for the default text.

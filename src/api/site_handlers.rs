@@ -188,6 +188,25 @@ pub struct UpdateSiteRequest {
     pub document_root: Option<String>,
     pub websocket: Option<bool>,
     pub max_body_mb: Option<i64>,
+    /// Admins only. 0 removes the limit.
+    pub memory_limit_mb: Option<u32>,
+    /// Admins only. Percentage of one core, so 200 is two cores. 0 removes the limit.
+    pub cpu_limit_percent: Option<u32>,
+}
+
+/// A requested limit: None to remove it, otherwise within `range`.
+fn limit_value(value: u32, range: std::ops::RangeInclusive<u32>, what: &str) -> ApiResult<Option<u32>> {
+    if value == 0 {
+        return Ok(None);
+    }
+    if !range.contains(&value) {
+        return Err(ApiError::BadRequest(format!(
+            "{what} must be between {} and {}, or 0 for no limit",
+            range.start(),
+            range.end()
+        )));
+    }
+    Ok(Some(value))
 }
 
 pub async fn update_site(
@@ -279,8 +298,23 @@ pub async fn update_site(
                     .map_err(|e| ApiError::BadRequest(format!("The document root can't be used: {e}")))?;
                 site.document_root = Some(crate::services::sites::display_path(&path));
             }
+            if p.memory_limit_mb.is_some() || p.cpu_limit_percent.is_some() {
+                // A cap protects the server's other sites, so a site's manager can't lift it.
+                require_admin(&user)?;
+                if !site.kind().is_some_and(|k| k.has_app()) {
+                    return Err(ApiError::BadRequest("This site type has no app to limit".into()));
+                }
+                if let Some(mb) = p.memory_limit_mb {
+                    site.memory_limit_mb = limit_value(mb, 64..=1_048_576, "Memory limit (MB)")?;
+                }
+                if let Some(percent) = p.cpu_limit_percent {
+                    site.cpu_limit_percent = limit_value(percent, 5..=6400, "CPU limit (%)")?;
+                }
+            }
+            let limits_changed = (previous.memory_limit_mb, previous.cpu_limit_percent)
+                != (site.memory_limit_mb, site.cpu_limit_percent);
             apply_site(&config, conn, &previous, &site)?;
-            if previous.target_port != site.target_port {
+            if previous.target_port != site.target_port || limits_changed {
                 let _ = apps::apply(&config, &site);
             }
             audit::record(conn, &user, "site.update", Some(&site.domain), None);

@@ -163,6 +163,7 @@ pub fn render_unit(site: &Site, pm2: &str) -> String {
          Group={user}\n\
          WorkingDirectory={home}\n\
          LimitNOFILE=65535\n\
+         {limits}\
          Environment=HOME={home}\n\
          Environment=PM2_HOME={home}/.pm2\n\
          Environment=PATH={path}\n\
@@ -190,6 +191,7 @@ pub fn render_unit(site: &Site, pm2: &str) -> String {
         domain = site.domain,
         user = site.system_user,
         path = apps::app_path(&home, &wd),
+        limits = apps::limit_lines(site),
     )
 }
 

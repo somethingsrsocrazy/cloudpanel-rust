@@ -302,4 +302,9 @@ pub const MIGRATIONS: &[&str] = &[
     );
     CREATE INDEX runners_site ON runners(site_id);
     "#,
+    // Optional caps on a site app's unit. NULL means no limit.
+    r#"
+    ALTER TABLE sites ADD COLUMN memory_limit_mb INTEGER;
+    ALTER TABLE sites ADD COLUMN cpu_limit_percent INTEGER;
+    "#,
 ];

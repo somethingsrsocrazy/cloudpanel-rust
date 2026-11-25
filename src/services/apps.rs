@@ -138,6 +138,18 @@ fn local_user(opts: CmdOpts) -> CmdOpts {
     }
 }
 
+/// The `[Service]` lines for the site's resource limits, if it has any.
+pub fn limit_lines(site: &Site) -> String {
+    let mut out = String::new();
+    if let Some(mb) = site.memory_limit_mb {
+        out.push_str(&format!("MemoryMax={mb}M\n"));
+    }
+    if let Some(percent) = site.cpu_limit_percent {
+        out.push_str(&format!("CPUQuota={percent}%\n"));
+    }
+    out
+}
+
 /// Render the unit. Values were validated: domain (`validate::domain`), user
 /// (`validate::system_user`), command (single line) and workdir (`path_within`).
 pub fn render_unit(site: &Site, env_file: &str) -> String {
@@ -172,6 +184,7 @@ pub fn render_unit(site: &Site, env_file: &str) -> String {
          Environment=HOME={home}\n\
          Environment=PATH={path}\n\
          {lang_env}\
+         {limits}\
          EnvironmentFile=-{env_file}\n\
          ExecStart=/bin/sh -c \"{exec}\"\n\
          Restart=always\n\
@@ -196,6 +209,7 @@ pub fn render_unit(site: &Site, env_file: &str) -> String {
         domain = site.domain,
         user = site.system_user,
         path = app_path(&home, &wd),
+        limits = limit_lines(site),
     )
 }
 
@@ -735,9 +749,27 @@ mod tests {
             www_redirect: false,
             php_version: None,
             vhost_managed: true,
+            memory_limit_mb: None,
+            cpu_limit_percent: None,
             maintenance_mode: false,
             maintenance_message: String::new(),
             maintenance_allow: String::new(),
+        }
+    }
+
+    #[test]
+    fn resource_limits_reach_both_units() {
+        let mut s = crate::services::nginx::test_site("nodejs");
+        s.memory_limit_mb = Some(512);
+        s.cpu_limit_percent = Some(150);
+        for unit in [
+            render_unit(&s, "/tmp/env"),
+            super::super::pm2::render_unit(&s, "/usr/bin/pm2"),
+        ] {
+            let service = unit.split("[Service]").nth(1).unwrap();
+            let service = service.split("[Install]").next().unwrap();
+            assert!(service.contains("\nMemoryMax=512M\n"), "{unit}");
+            assert!(service.contains("\nCPUQuota=150%\n"), "{unit}");
         }
     }
 
@@ -750,6 +782,7 @@ mod tests {
         assert!(u.contains("WorkingDirectory=/home/shop-example/htdocs/shop.example.com\n"));
         assert!(u.contains("ExecStart=/bin/sh -c \"npm start -- --port=$$PORT --x=%%d\"\n"));
         assert!(u.contains("Restart=always"));
+        assert!(!u.contains("MemoryMax") && !u.contains("CPUQuota"));
         let e = render_env(&s);
         assert!(e.contains("PORT=3000\n"));
         assert!(e.contains("API_KEY=\"a\\\"b\\$c\"\n"));

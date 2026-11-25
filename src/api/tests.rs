@@ -286,6 +286,24 @@ async fn site_managers_only_see_their_sites() {
 }
 
 #[tokio::test]
+async fn only_admins_set_resource_limits() {
+    let h = harness();
+    let manager = h.login("manager").await;
+    let (_, sites, _) = h.call("GET", "/sites", Some(&manager), None, false).await;
+    let path = format!("/sites/{}", sites[0]["id"].as_i64().unwrap());
+    // Even on an assigned site, and even to remove a limit.
+    for body in [json!({"memory_limit_mb": 512}), json!({"cpu_limit_percent": 0})] {
+        let (s, _, _) = h.call("PATCH", &path, Some(&manager), Some(body), true).await;
+        assert_eq!(s, StatusCode::FORBIDDEN);
+    }
+    let admin = h.login("admin").await;
+    for body in [json!({"memory_limit_mb": 8}), json!({"cpu_limit_percent": 100000})] {
+        let (s, v, _) = h.call("PATCH", &path, Some(&admin), Some(body), true).await;
+        assert_eq!(s, StatusCode::BAD_REQUEST, "{v}");
+    }
+}
+
+#[tokio::test]
 async fn last_admin_cannot_be_demoted() {
     let h = harness();
     let cookie = h.login("admin").await;

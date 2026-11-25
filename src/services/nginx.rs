@@ -1155,6 +1155,8 @@ pub(crate) fn test_site(site_type: &str) -> Site {
         www_redirect: false,
         php_version: None,
         vhost_managed: true,
+        memory_limit_mb: None,
+        cpu_limit_percent: None,
         maintenance_mode: false,
         maintenance_message: String::new(),
         maintenance_allow: String::new(),

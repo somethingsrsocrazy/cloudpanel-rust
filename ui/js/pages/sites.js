@@ -807,6 +807,8 @@ function tabSettings(el, { site, reload }) {
     !site.domain.startsWith('www.') && selectField({ label: `www.${site.domain}`, name: 'www', options: WWW_OPTIONS, value: wwwMode(site) }),
     wwwCertWarning(site, reload),
     !HAS_ROOT.has(site.site_type) && h('label', { class: 'check' }, h('input', { type: 'checkbox', name: 'websocket', checked: site.websocket }), 'WebSocket support'),
+    isAdmin() && HAS_APP.has(site.site_type) && field({ label: 'Memory limit (MB)', name: 'memory_limit_mb', type: 'number', value: site.memory_limit_mb || 0, hint: 'Most memory the app may use, at least 64. 0 for no limit.', attrs: { min: 0 } }),
+    isAdmin() && HAS_APP.has(site.site_type) && field({ label: 'CPU limit (%)', name: 'cpu_limit_percent', type: 'number', value: site.cpu_limit_percent || 0, hint: 'Percentage of one CPU core, so 200 is two cores. 0 for no limit.', attrs: { min: 0 } }),
     site.vhost_managed && h('div', null, h('button', { class: 'btn primary', type: 'submit', text: 'Save' })));
   general.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -814,6 +816,8 @@ function tabSettings(el, { site, reload }) {
     const body = { max_body_mb: Number(f.max_body_mb.value), ...(f.www ? wwwBody(f.www.value) : {}) };
     if (f.target_port) body.target_port = Number(f.target_port.value);
     if (f.websocket) body.websocket = f.websocket.checked;
+    if (f.memory_limit_mb) body.memory_limit_mb = Number(f.memory_limit_mb.value);
+    if (f.cpu_limit_percent) body.cpu_limit_percent = Number(f.cpu_limit_percent.value);
     if (f.document_root && f.document_root.value.trim()) body.document_root = f.document_root.value.trim();
     await withBusy(general.querySelector('button[type=submit]'), async () => { await api(`/sites/${site.id}`, { method: 'PATCH', body }); toast('Settings saved'); reload(); });
   });

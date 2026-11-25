@@ -12,6 +12,7 @@ Release descriptions and downloadable binaries are also published to the [GitHub
 ## [Unreleased]
 
 ### Added
+- Optional memory and CPU limits per site app (systemd `MemoryMax=` and `CPUQuota=`), set by admins under the site's Settings.
 - Automated changelog extraction and release synchronization scripts (`scripts/extract-changelog.py`, `scripts/sync-release-notes.py`).
 - Automatic release notes generation configuration for GitHub (`.github/release.yml`).
 
