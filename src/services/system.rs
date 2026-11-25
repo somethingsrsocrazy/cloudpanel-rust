@@ -2,6 +2,7 @@
 
 use super::apps::parse_show;
 use super::cmd::{run_host, run_streaming, run_with, CmdOpts};
+use super::php;
 use crate::jobs::JobLog;
 use serde::{Deserialize, Serialize};
 
@@ -62,8 +63,18 @@ pub fn status(name: &str, description: &str) -> Option<ServiceStatus> {
     })
 }
 
+/// Every host unit the panel manages, as (name, description): the fixed list, and one PHP-FPM
+/// unit per installed PHP version.
+pub fn managed_units() -> Vec<(String, String)> {
+    let fixed = MANAGED.iter().map(|(n, d)| (n.to_string(), d.to_string()));
+    let php = php::installed_versions()
+        .into_iter()
+        .map(|v| (php::fpm_unit(&v), format!("PHP {v} (FPM)")));
+    fixed.chain(php).collect()
+}
+
 pub fn list(app_units: &[(String, String)]) -> Vec<ServiceStatus> {
-    let mut out: Vec<ServiceStatus> = MANAGED.iter().filter_map(|(n, d)| status(n, d)).collect();
+    let mut out: Vec<ServiceStatus> = managed_units().iter().filter_map(|(n, d)| status(n, d)).collect();
     // On Debian `ssh` is the unit; some systems only have `sshd`.
     if !out.iter().any(|s| s.name == "ssh") {
         if let Some(s) = status("sshd", "SSH server") {

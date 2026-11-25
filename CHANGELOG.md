@@ -12,6 +12,7 @@ Release descriptions and downloadable binaries are also published to the [GitHub
 ## [Unreleased]
 
 ### Added
+- PHP-FPM services (one per installed PHP version) on the Services page, with start, stop, restart, reload, logs and stopped-service alerts.
 - Automated changelog extraction and release synchronization scripts (`scripts/extract-changelog.py`, `scripts/sync-release-notes.py`).
 - Automatic release notes generation configuration for GitHub (`.github/release.yml`).
 

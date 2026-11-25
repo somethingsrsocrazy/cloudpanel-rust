@@ -112,7 +112,7 @@ sudo cloudpanel user-disable-2fa --username admin
 - **Logs**: nginx access and error logs, app output, and the generated vhost.
 
 **Server**
-- **Services**: status and memory of nginx, SSH, cron, fail2ban, Docker, MariaDB/MySQL, MongoDB, UFW and site apps. Start, stop, restart and reload them, and read their journal.
+- **Services**: status and memory of nginx, SSH, cron, fail2ban, Docker, MariaDB/MySQL, MongoDB, PHP-FPM, UFW and site apps. Start, stop, restart and reload them, and read their journal.
 - **Updates**: check for apt updates (security updates are flagged), install them all, and see when a reboot is required. You can reboot from the panel.
 - **CloudPanel updates**: the panel looks for a new release daily, and you can check any time under *Services → Updates*. A new version is flagged in the sidebar and sent once to your notification channels, along with the command that installs it. With automatic updates on (the default), it is then installed in the chosen nightly hour.
 - **Firewall**: UFW port and port-range rules, optionally limited to one or more source IPs/CIDRs (one UFW rule each), and an IP block list. Rules that would block SSH or the panel for your own address are refused. The most specific rule wins whatever order you add them in: rules naming a source come first, then denies for everyone, then allows for everyone.

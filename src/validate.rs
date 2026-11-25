@@ -476,7 +476,7 @@ pub fn service_name(input: &str) -> VResult<String> {
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
     });
     let is_managed = crate::services::system::MANAGED.iter().any(|(name, _)| *name == s);
-    if is_managed || EXTRA.contains(&s) || is_app {
+    if is_managed || EXTRA.contains(&s) || is_app || crate::services::php::is_fpm_unit(s) {
         Ok(s.to_string())
     } else {
         Err(format!("'{s}' is not a managed service"))
@@ -764,6 +764,17 @@ mod tests {
         assert_eq!(service_name("nginx.service").unwrap(), "nginx");
         assert!(service_name("cloudpanel-app-").is_err());
         assert!(service_name("cloudpanel-app-Bad").is_err());
+        assert_eq!(service_name("php8.3-fpm.service").unwrap(), "php8.3-fpm");
+        for bad in [
+            "php-fpm",
+            "php8-fpm",
+            "php8.3",
+            "php8.3-fpm@x",
+            "php8.x-fpm",
+            "php8.3.1-fpm",
+        ] {
+            assert!(service_name(bad).is_err(), "{bad}");
+        }
         // Everything the Services page lists must accept actions and log requests.
         for (name, _) in crate::services::system::MANAGED {
             assert_eq!(service_name(name).as_deref(), Ok(*name));

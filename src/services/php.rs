@@ -75,7 +75,14 @@ pub fn render_pool(domain: &str, user: &str) -> String {
     )
 }
 
-fn fpm_unit(version: &str) -> String {
+/// Whether `name` is the systemd unit of a PHP-FPM version, such as `php8.3-fpm`.
+pub fn is_fpm_unit(name: &str) -> bool {
+    name.strip_prefix("php")
+        .and_then(|rest| rest.strip_suffix("-fpm"))
+        .is_some_and(valid_version)
+}
+
+pub fn fpm_unit(version: &str) -> String {
     format!("php{version}-fpm")
 }
 

@@ -369,8 +369,8 @@ fn collect_checks(state: &SharedState, rules: &AlertRules) -> Vec<Check> {
                 }
             }
         }
-        for (name, desc) in super::system::MANAGED {
-            if let Some(st) = super::system::status(name, desc) {
+        for (name, desc) in super::system::managed_units() {
+            if let Some(st) = super::system::status(&name, &desc) {
                 if st.enabled == "enabled" {
                     checks.push(Check {
                         key: format!("service:{name}"),
