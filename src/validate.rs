@@ -466,19 +466,8 @@ pub fn db_identifier(input: &str) -> VResult<String> {
 /// systemd unit name from the managed allow-list or a CloudPanel app unit.
 pub fn service_name(input: &str) -> VResult<String> {
     let s = input.trim().trim_end_matches(".service");
-    const ALLOWED: &[&str] = &[
-        "nginx",
-        "ssh",
-        "sshd",
-        "cron",
-        "fail2ban",
-        "docker",
-        "mariadb",
-        "mysql",
-        "mongod",
-        "ufw",
-        "certbot.timer",
-    ];
+    // Not rows of their own on the Services page: `ssh` under its other name, and the renewal timer.
+    const EXTRA: &[&str] = &["sshd", "certbot.timer"];
     let is_app = s.strip_prefix("cloudpanel-app-").is_some_and(|rest| {
         !rest.is_empty()
             && rest.len() <= 64
@@ -486,7 +475,8 @@ pub fn service_name(input: &str) -> VResult<String> {
                 .chars()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
     });
-    if ALLOWED.contains(&s) || is_app {
+    let is_managed = crate::services::system::MANAGED.iter().any(|(name, _)| *name == s);
+    if is_managed || EXTRA.contains(&s) || is_app {
         Ok(s.to_string())
     } else {
         Err(format!("'{s}' is not a managed service"))
@@ -774,6 +764,10 @@ mod tests {
         assert_eq!(service_name("nginx.service").unwrap(), "nginx");
         assert!(service_name("cloudpanel-app-").is_err());
         assert!(service_name("cloudpanel-app-Bad").is_err());
+        // Everything the Services page lists must accept actions and log requests.
+        for (name, _) in crate::services::system::MANAGED {
+            assert_eq!(service_name(name).as_deref(), Ok(*name));
+        }
         assert!(image_ref("nginx:1.27").is_ok());
         assert!(image_ref("nginx latest").is_err());
         assert!(nginx_directives("http { }").is_err());
