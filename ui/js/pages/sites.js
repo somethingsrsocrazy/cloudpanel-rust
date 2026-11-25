@@ -375,6 +375,21 @@ function maintenanceCard(site, reload) {
 
 // ---------- Overview ----------
 
+function diskUsageCard(site) {
+  const result = h('div', null, h('p', { class: 'muted', text: 'Add up the space used by this site’s home directory.' }));
+  const button = h('button', { class: 'btn' }, icon('refresh'), 'Calculate');
+  button.addEventListener('click', () => withBusy(button, async () => {
+    try {
+      const u = await api(`/sites/${site.id}/disk-usage`);
+      result.replaceChildren(kv([
+        ['Used', `${u.complete ? '' : 'At least '}${fmtBytes(u.bytes)}`],
+        ['Files', u.files.toLocaleString()],
+      ]));
+    } catch (e) { if (e.status !== 401) toast(e.message, 'error'); }
+  }));
+  return card({ title: 'Disk usage', body: h('div', { class: 'form' }, result, h('div', null, button)) });
+}
+
 function tabOverview(el, { site }) {
   const t = SITE_TYPES[site.site_type] || { label: site.site_type };
   const cert = site.certificate;
@@ -398,6 +413,7 @@ function tabOverview(el, { site }) {
           site.app.since && ['Since', site.app.since], ['Command', h('code', { class: 'truncate', text: site.app_command || '—' })],
         ]),
       }),
+      site.home_dir && diskUsageCard(site),
       card({
         title: 'Certificate', body: cert ? kv([
           ['Issuer', cert.issuer], ['Names', cert.names.join(', ') || cert.subject],

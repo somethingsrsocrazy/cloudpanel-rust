@@ -7,6 +7,7 @@ pub mod cloudflare;
 pub mod cmd;
 pub mod cron;
 pub mod databases;
+pub mod disk_usage;
 pub mod docker;
 pub mod dotenv;
 pub mod fail2ban;

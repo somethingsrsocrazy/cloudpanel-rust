@@ -6,8 +6,8 @@ use crate::config::Config;
 use crate::db::{self, models::Site, models::SiteType};
 use crate::services::nginx::{DEFAULT_MAINTENANCE_MESSAGE, MAINTENANCE_MESSAGE_MAX};
 use crate::services::sites::{deprovision, provision, www_choice, SiteInput};
-use crate::services::{apps, cert_takeover, php, pm2, runtimes, NginxService, SslService};
-use crate::state::SharedState;
+use crate::services::{apps, cert_takeover, disk_usage, php, pm2, runtimes, NginxService, SslService};
+use crate::state::{blocking, SharedState};
 use crate::validate;
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
@@ -178,6 +178,24 @@ pub async fn get_site(
         })
         .await?;
     Ok(Json(out))
+}
+
+/// Counted on request, as walking a large site takes a while.
+pub async fn get_site_disk_usage(
+    Path(id): Path<i64>,
+    user: AuthUser,
+    State(state): State<SharedState>,
+) -> ApiResult<impl IntoResponse> {
+    let site = state.db(move |conn| require_site(conn, &user, id)).await?;
+    let home = site
+        .home_dir
+        .ok_or_else(|| ApiError::Unprocessable("This site has no home directory".into()))?;
+    let usage = blocking(move || {
+        disk_usage::measure(std::path::Path::new(&home))
+            .map_err(|e| ApiError::Unprocessable(format!("Could not read the site directory: {e}")))
+    })
+    .await?;
+    Ok(Json(usage))
 }
 
 #[derive(Deserialize)]

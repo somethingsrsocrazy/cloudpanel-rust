@@ -64,6 +64,7 @@ const ROUTES: &[(&str, &str, Guard)] = &[
     ("POST", "/sites/:id/state", Site),
     ("PUT", "/sites/:id/maintenance", Site),
     ("GET", "/sites/:id/logs", Site),
+    ("GET", "/sites/:id/disk-usage", Site),
     ("GET", "/sites/:id/vhost", Site),
     ("PUT", "/sites/:id/directives", Admin),
     ("PUT", "/sites/:id/basic-auth", Site),

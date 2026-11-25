@@ -110,6 +110,7 @@ sudo cloudpanel user-disable-2fa --username admin
 - **Databases**: MySQL/MariaDB, MongoDB and SQLite. Create databases and users, reset passwords (shown once, never stored), export/download and import dumps.
 - **Backups**: files and database dumps as `tar.gz`, run now or on a daily/weekly schedule with retention, optional copies to S3-compatible storage (AWS, R2, B2, Wasabi, MinIO), download, and one-click restore. The panel can also back up itself.
 - **Logs**: nginx access and error logs, app output, and the generated vhost.
+- **Disk usage**: how much space a site's home takes up, counted on request from the site's Overview tab.
 
 **Server**
 - **Services**: status and memory of nginx, SSH, cron, fail2ban, Docker, MariaDB/MySQL, MongoDB, UFW and site apps. Start, stop, restart and reload them, and read their journal.

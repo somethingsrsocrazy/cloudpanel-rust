@@ -12,6 +12,7 @@ Release descriptions and downloadable binaries are also published to the [GitHub
 ## [Unreleased]
 
 ### Added
+- Disk usage per site, on the site's Overview tab (`GET /api/sites/:id/disk-usage`).
 - Automated changelog extraction and release synchronization scripts (`scripts/extract-changelog.py`, `scripts/sync-release-notes.py`).
 - Automatic release notes generation configuration for GitHub (`.github/release.yml`).
 
