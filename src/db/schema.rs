@@ -302,4 +302,8 @@ pub const MIGRATIONS: &[&str] = &[
     );
     CREATE INDEX runners_site ON runners(site_id);
     "#,
+    // Static and PHP sites: serve `image.jpg.webp` in place of `image.jpg` to browsers that take it.
+    r#"
+    ALTER TABLE sites ADD COLUMN webp BOOLEAN NOT NULL DEFAULT 0;
+    "#,
 ];

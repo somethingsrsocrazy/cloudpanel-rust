@@ -99,6 +99,29 @@ impl NginxService {
         )
     }
 
+    /// Static and PHP sites with WebP on: a browser that accepts WebP gets `photo.jpg.webp`, where
+    /// there is one, for `photo.jpg`. A `location` with its own `add_header` inherits none from
+    /// the server, so the headers are repeated. `Vary` keeps caches from mixing the two up.
+    fn webp_block(config: &Config, site: &Site) -> String {
+        let fallback = if site.site_type == "php" {
+            "/index.php?$args"
+        } else {
+            "/index.html"
+        };
+        let mut headers = SECURITY_HEADERS.to_string();
+        if site.ssl_enabled {
+            headers.push_str("\n    add_header Strict-Transport-Security \"max-age=31536000\" always;");
+        }
+        let headers: String = headers.lines().map(|l| format!("    {l}\n")).collect();
+        format!(
+            "\n    set $cloudpanel_webp \"\";\n    if ($http_accept ~* \"image/webp\") {{\n        \
+             set $cloudpanel_webp \".webp\";\n    }}\n\n    location ~* \\.(?:jpe?g|png)$ {{\n{auth}{headers}        \
+             add_header Vary Accept always;\n        \
+             try_files $uri$cloudpanel_webp $uri {fallback};\n    }}\n",
+            auth = Self::auth_block(config, site),
+        )
+    }
+
     /// Basic-auth directives for the `location /` block (empty when disabled).
     fn auth_block(config: &Config, site: &Site) -> String {
         if !site.basic_auth_enabled {
@@ -549,6 +572,10 @@ impl NginxService {
         out.push_str(&Self::auth_block(config, site));
         out.push_str(&Self::location_body(site));
         out.push_str("\n    }\n\n    location ~ /\\.(?!well-known) {\n        deny all;\n    }\n");
+        // After the dot-file rule: nginx takes the first matching regex, so hidden files stay hidden.
+        if site.webp && matches!(site.site_type.as_str(), "static" | "php") {
+            out.push_str(&Self::webp_block(config, site));
+        }
         if site.site_type == "php" {
             // `try_files $uri =404` stops nginx handing a non-PHP upload to PHP as a script.
             out.push_str(&format!(
@@ -1155,6 +1182,7 @@ pub(crate) fn test_site(site_type: &str) -> Site {
         www_redirect: false,
         php_version: None,
         vhost_managed: true,
+        webp: false,
         maintenance_mode: false,
         maintenance_message: String::new(),
         maintenance_allow: String::new(),
@@ -1170,6 +1198,35 @@ mod tests {
         c.etc_dir = PathBuf::from("/etc/cloudpanel");
         c.nginx_log_dir = PathBuf::from("/var/log/nginx");
         c
+    }
+
+    #[test]
+    fn webp_images() {
+        let mut s = test_site("static");
+        assert!(!NginxService::generate_config(&cfg(), &s).contains("webp"));
+        s.webp = true;
+        s.basic_auth_enabled = true;
+        let c = NginxService::generate_config(&cfg(), &s);
+        assert!(c.contains("try_files $uri$cloudpanel_webp $uri /index.html;"));
+        assert!(c.contains("add_header Vary Accept always;"));
+        // Hidden files are refused before the image rule can match them.
+        let hidden = c.find("location ~ /\\.(?!well-known)").unwrap();
+        let images = c.find("location ~* \\.(?:jpe?g|png)$").unwrap();
+        assert!(hidden < images);
+        // The image location keeps the password and the security headers.
+        let block = &c[images..];
+        assert!(block.contains("auth_basic_user_file"));
+        assert!(block.contains("X-Content-Type-Options"));
+
+        let mut php = test_site("php");
+        php.webp = true;
+        let c = NginxService::generate_config(&cfg(), &php);
+        assert!(c.contains("try_files $uri$cloudpanel_webp $uri /index.php?$args;"));
+
+        // Proxied sites serve their own images.
+        let mut proxy = test_site("nodejs");
+        proxy.webp = true;
+        assert!(!NginxService::generate_config(&cfg(), &proxy).contains("webp"));
     }
 
     #[test]

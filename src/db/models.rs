@@ -111,6 +111,8 @@ pub struct Site {
     /// False when the site's nginx config was imported from CloudPanel CE. The panel keeps that
     /// file exactly as it is and refuses changes that would regenerate it.
     pub vhost_managed: bool,
+    /// Static and PHP sites: send an image's `.webp` neighbour to browsers that accept WebP.
+    pub webp: bool,
     /// Visitors see a maintenance page (HTTP 503) while the site keeps running behind it.
     pub maintenance_mode: bool,
     /// What the maintenance page says; empty for the default text.

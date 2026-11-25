@@ -323,7 +323,7 @@ const SITE_COLS: &str = "id, domain, site_type, target_port, document_root, syst
                          ssl_auto_renew, ssl_cert_path, ssl_key_path, is_active, app_command, app_workdir, app_env, \
                          app_enabled, home_dir, websocket, max_body_mb, custom_directives, basic_auth_enabled, \
                          basic_auth_allow, created_at, updated_at, app_manager, app_pm2, www_redirect, php_version, \
-                         vhost_managed, maintenance_mode, maintenance_message, maintenance_allow";
+                         vhost_managed, maintenance_mode, maintenance_message, maintenance_allow, webp";
 
 fn site_from_row(row: &Row) -> rusqlite::Result<Site> {
     Ok(Site {
@@ -359,6 +359,7 @@ fn site_from_row(row: &Row) -> rusqlite::Result<Site> {
         maintenance_mode: row.get(29)?,
         maintenance_message: row.get(30)?,
         maintenance_allow: row.get(31)?,
+        webp: row.get(32)?,
     })
 }
 
@@ -434,7 +435,7 @@ pub fn save_site(conn: &Connection, s: &Site) -> rusqlite::Result<bool> {
              app_env = ?10, app_enabled = ?11, websocket = ?12, max_body_mb = ?13, custom_directives = ?14,
              basic_auth_enabled = ?15, basic_auth_allow = ?16, updated_at = ?17,
              app_manager = ?19, app_pm2 = ?20, www_redirect = ?21,
-             maintenance_mode = ?22, maintenance_message = ?23, maintenance_allow = ?24
+             maintenance_mode = ?22, maintenance_message = ?23, maintenance_allow = ?24, webp = ?25
          WHERE id = ?18",
         params![
             s.target_port,
@@ -460,7 +461,8 @@ pub fn save_site(conn: &Connection, s: &Site) -> rusqlite::Result<bool> {
             s.www_redirect,
             s.maintenance_mode,
             s.maintenance_message,
-            s.maintenance_allow
+            s.maintenance_allow,
+            s.webp
         ],
     )?;
     Ok(n > 0)

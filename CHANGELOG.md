@@ -12,6 +12,7 @@ Release descriptions and downloadable binaries are also published to the [GitHub
 ## [Unreleased]
 
 ### Added
+- Optional WebP images for static and PHP sites: nginx serves `photo.jpg.webp` for `photo.jpg` to browsers that accept it.
 - Automated changelog extraction and release synchronization scripts (`scripts/extract-changelog.py`, `scripts/sync-release-notes.py`).
 - Automatic release notes generation configuration for GitHub (`.github/release.yml`).
 

@@ -724,6 +724,7 @@ mod tests {
             app_enabled: true,
             home_dir: Some("/home/shop-example".into()),
             websocket: true,
+            webp: false,
             max_body_mb: 128,
             custom_directives: String::new(),
             basic_auth_enabled: false,

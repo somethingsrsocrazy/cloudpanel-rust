@@ -187,6 +187,7 @@ pub struct UpdateSiteRequest {
     pub www_redirect: Option<bool>,
     pub document_root: Option<String>,
     pub websocket: Option<bool>,
+    pub webp: Option<bool>,
     pub max_body_mb: Option<i64>,
 }
 
@@ -245,6 +246,14 @@ pub async fn update_site(
             site.www_redirect = site.www_redirect && site.include_www;
             if let Some(ws) = p.websocket {
                 site.websocket = ws;
+            }
+            if let Some(webp) = p.webp {
+                if webp && !site.kind().is_some_and(|k| k.has_document_root()) {
+                    return Err(ApiError::BadRequest(
+                        "Only static and PHP sites can serve WebP images".into(),
+                    ));
+                }
+                site.webp = webp;
             }
             if let Some(mb) = p.max_body_mb {
                 if !(1..=10240).contains(&mb) {

@@ -807,6 +807,7 @@ function tabSettings(el, { site, reload }) {
     !site.domain.startsWith('www.') && selectField({ label: `www.${site.domain}`, name: 'www', options: WWW_OPTIONS, value: wwwMode(site) }),
     wwwCertWarning(site, reload),
     !HAS_ROOT.has(site.site_type) && h('label', { class: 'check' }, h('input', { type: 'checkbox', name: 'websocket', checked: site.websocket }), 'WebSocket support'),
+    HAS_ROOT.has(site.site_type) && h('label', { class: 'check' }, h('input', { type: 'checkbox', name: 'webp', checked: site.webp }), 'Serve WebP images (photo.jpg.webp for photo.jpg, where it exists)'),
     site.vhost_managed && h('div', null, h('button', { class: 'btn primary', type: 'submit', text: 'Save' })));
   general.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -814,6 +815,7 @@ function tabSettings(el, { site, reload }) {
     const body = { max_body_mb: Number(f.max_body_mb.value), ...(f.www ? wwwBody(f.www.value) : {}) };
     if (f.target_port) body.target_port = Number(f.target_port.value);
     if (f.websocket) body.websocket = f.websocket.checked;
+    if (f.webp) body.webp = f.webp.checked;
     if (f.document_root && f.document_root.value.trim()) body.document_root = f.document_root.value.trim();
     await withBusy(general.querySelector('button[type=submit]'), async () => { await api(`/sites/${site.id}`, { method: 'PATCH', body }); toast('Settings saved'); reload(); });
   });
